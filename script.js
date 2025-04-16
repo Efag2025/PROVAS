@@ -269,29 +269,43 @@ function iniciarProva() {
       form.appendChild(div);
     });
   }
-  
   function enviarProva() {
-    const respostas = {};
-    for (let i = 0; i < questoes.length; i++) {
-      const selecionada = document.querySelector(`input[name="q${i}"]:checked`);
-      if (!selecionada) {
-        alert(`Você precisa responder todas as questões antes de enviar a prova! Questão ${i + 1} está em branco.`);
-        return;
-      }
-      respostas[`q${i + 1}`] = selecionada.value;
+  const respostas = {};
+  for (let i = 0; i < questoes.length; i++) {
+    const selecionada = document.querySelector(`input[name="q${i}"]:checked`);
+    if (!selecionada) {
+      alert(`Você precisa responder todas as questões antes de enviar a prova! Questão ${i + 1} está em branco.`);
+      return;
     }
-  
-    clearInterval(timerInterval);
-  
-    const dadosAluno = {
-      nome: document.getElementById('nome').value,
-      codigoFuncional: document.getElementById('codigoFuncional').value,
-      pelotao: document.getElementById('pelotao').value,
-      respostas: respostas
-    };
-  
-    console.log("Respostas da prova:", dadosAluno);
-    alert("Prova enviada com sucesso!");
-    location.reload(); // Ou redirecionar para uma tela de agradecimento
+    respostas[`q${i + 1}`] = selecionada.value;
   }
+
+  clearInterval(timerInterval);
+
+  const dadosAluno = {
+    nome: document.getElementById('nome').value,
+    codigoFuncional: document.getElementById('codigoFuncional').value,
+    pelotao: document.getElementById('pelotao').value,
+    respostas: respostas
+  };
+
+  // Enviar para o Google Sheets via Apps Script
+  fetch("https://script.google.com/macros/s/AKfycbxqDljdrss26uhqRhqMo5f7EzOaYyfqXEA_gYXBLvkdLMkCmVrEGm9JN7DtLLuxPpRG/exec", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(dadosAluno)
+  })
+  .then(res => res.text())
+  .then(msg => {
+    alert("Prova enviada com sucesso!");
+    location.reload(); // ou redirecionar para outra página
+  })
+  .catch(err => {
+    alert("Erro ao enviar a prova. Tente novamente.");
+    console.error(err);
+  });
+}
+
   
