@@ -200,150 +200,173 @@ const questoes = [
       ]
     }
   ];
-  
-  const tempoLimite = 120 * 60; // 120 minutos
-  let tempoRestante = tempoLimite;
-  let timerInterval;
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyB3RvIuuEl6FnRkunH750XjBvC7Ye0t0zc",
-    authDomain: "provas-efag.firebaseapp.com",
-    databaseURL: "https://provas-efag-default-rtdb.firebaseio.com",
-    projectId: "provas-efag",
-    storageBucket: "provas-efag.appspot.com",
-    messagingSenderId: "903504511283",
-    appId: "1:903504511283:web:243704ea6c823b94c3fe46"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  
-  function iniciarProva() {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) elem.requestFullscreen();
-    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-  
-    const nome = document.getElementById('nome').value.trim();
-    const codigo = document.getElementById('codigoFuncional').value.trim();
-    const pelotao = document.getElementById('pelotao').value.trim();
-  
-    if (!nome || !codigo || !pelotao) {
-      alert("Por favor, preencha todos os campos antes de iniciar a prova.");
+
+const gabarito = {
+  q01: "D", q02: "C", q03: "A", q04: "C", q05: "B",
+  q06: "C", q07: "A", q08: "B", q09: "D", q10: "A",
+  q11: "A", q12: "A", q13: "B", q14: "B", q15: "C",
+  q16: "B", q17: "B", q18: "C", q19: "C", q20: "C",
+};
+
+const tempoLimite = 120 * 60;
+let tempoRestante = tempoLimite;
+let timerInterval;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB3RvIuuEl6FnRkunH750XjBvC7Ye0t0zc",
+  authDomain: "provas-efag.firebaseapp.com",
+  databaseURL: "https://provas-efag-default-rtdb.firebaseio.com",
+  projectId: "provas-efag",
+  storageBucket: "provas-efag.appspot.com",
+  messagingSenderId: "903504511283",
+  appId: "1:903504511283:web:243704ea6c823b94c3fe46"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+function iniciarProva() {
+  const elem = document.documentElement;
+  if (elem.requestFullscreen) elem.requestFullscreen();
+  else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+  else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+
+  const nome = document.getElementById('nome').value.trim();
+  const codigo = document.getElementById('codigoFuncional').value.trim();
+  const pelotao = document.getElementById('pelotao').value.trim();
+
+  if (!nome || !codigo || !pelotao) {
+    alert("Por favor, preencha todos os campos antes de iniciar a prova.");
+    return;
+  }
+
+  document.getElementById('form-identificacao').classList.add('hidden');
+  document.getElementById('prova').classList.remove('hidden');
+  iniciarTimer();
+  renderizarQuestoes();
+}
+
+function iniciarTimer() {
+  const timerEl = document.getElementById('timer');
+  timerInterval = setInterval(() => {
+    const minutos = Math.floor(tempoRestante / 60);
+    const segundos = tempoRestante % 60;
+    timerEl.textContent = `Tempo restante: ${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+    if (tempoRestante <= 0) {
+      clearInterval(timerInterval);
+      alert("Tempo esgotado! A prova será enviada automaticamente.");
+      enviarProva();
+    }
+    tempoRestante--;
+  }, 1000);
+}
+
+function renderizarQuestoes() {
+  const letras = ['A', 'B', 'C', 'D', 'E'];
+  const form = document.getElementById('formProva');
+  form.innerHTML = '';
+
+  questoes.forEach((q, index) => {
+    const div = document.createElement('div');
+    div.className = 'pergunta';
+
+    const p = document.createElement('p');
+    p.textContent = q.enunciado;
+    div.appendChild(p);
+
+    q.alternativas.forEach((alt, i) => {
+      const id = `q${index}_a${i}`;
+      const label = document.createElement('label');
+      label.setAttribute('for', id);
+
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = `q${index}`;
+      input.value = letras[i];
+      input.id = id;
+
+      label.appendChild(input);
+      label.append(` ${letras[i]}) ${alt}`);
+      div.appendChild(label);
+      div.appendChild(document.createElement('br'));
+    });
+
+    form.appendChild(div);
+  });
+}
+
+function enviarProva() {
+  const respostas = {};
+  let nota = 0;
+
+  for (let i = 0; i < questoes.length; i++) {
+    const selecionada = document.querySelector(`input[name="q${i}"]:checked`);
+    if (!selecionada) {
+      alert(`Você precisa responder todas as questões! Questão ${i + 1} está em branco.`);
       return;
     }
-  
-    document.getElementById('form-identificacao').classList.add('hidden');
-    document.getElementById('prova').classList.remove('hidden');
-    iniciarTimer();
-    renderizarQuestoes();
-  }
-  
-  function iniciarTimer() {
-    const timerEl = document.getElementById('timer');
-    timerInterval = setInterval(() => {
-      const minutos = Math.floor(tempoRestante / 60);
-      const segundos = tempoRestante % 60;
-      timerEl.textContent = `Tempo restante: ${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
-      if (tempoRestante <= 0) {
-        clearInterval(timerInterval);
-        alert("Tempo esgotado! A prova será enviada automaticamente.");
-        enviarProva();
-      }
-      tempoRestante--;
-    }, 1000);
-  }
-  
-  function renderizarQuestoes() {
-    const letras = ['A', 'B', 'C', 'D', 'E'];
-    const form = document.getElementById('formProva');
-    form.innerHTML = '';
-  
-    questoes.forEach((q, index) => {
-      const div = document.createElement('div');
-      div.className = 'pergunta';
-  
-      const p = document.createElement('p');
-      p.textContent = q.enunciado;
-      div.appendChild(p);
-  
-      q.alternativas.forEach((alt, i) => {
-        const id = `q${index}_a${i}`;
-        const label = document.createElement('label');
-        label.setAttribute('for', id);
-  
-        const input = document.createElement('input');
-        input.type = 'radio';
-        input.name = `q${index}`;
-        input.value = letras[i]; // salva letra
-        input.id = id;
-  
-        label.appendChild(input);
-        label.append(` ${letras[i]}) ${alt}`);
-        div.appendChild(label);
-        div.appendChild(document.createElement('br'));
-      });
-  
-      form.appendChild(div);
-    });
-  }
-  
-  function enviarProva() {
-    const respostas = {};
-    for (let i = 0; i < questoes.length; i++) {
-      const selecionada = document.querySelector(`input[name="q${i}"]:checked`);
-      if (!selecionada) {
-        alert(`Você precisa responder todas as questões! Questão ${i + 1} está em branco.`);
-        return;
-      }
-      const numeroQuestao = String(i + 1).padStart(2, '0'); // <- isso aqui organiza
-      respostas[`q${numeroQuestao}`] = selecionada.value;
-    }
-  
-    const dadosAluno = {
-      nome: document.getElementById('nome').value,
-      codigoFuncional: document.getElementById('codigoFuncional').value,
-      re: document.getElementById('re').value,
-      pelotao: document.getElementById('pelotao').value,
-      respostas: respostas,
-      dataHora: new Date().toISOString()
+
+    const numeroQuestao = String(i + 1).padStart(2, '0');
+    const letraSelecionada = selecionada.value;
+    const letraCorreta = gabarito[`q${numeroQuestao}`];
+    const correta = letraSelecionada === letraCorreta;
+
+    respostas[`q${numeroQuestao}`] = {
+      resposta: letraSelecionada,
+      correta: correta
     };
-  
-    const id = dadosAluno.codigoFuncional + "_" + Date.now();
-  
-    database.ref("respostas/" + id).set(dadosAluno)
-      .then(() => {
-        clearInterval(timerInterval);
-        const novaAba = window.open('', '_blank');
-        novaAba.document.write(`
-          <html>
-            <head>
-              <title>Prova Finalizada</title>
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  background-color: #f4f6f8;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  height: 100vh;
-                  margin: 0;
-                }
-                h1 {
-                  color: green;
-                  font-size: 28px;
-                }
-              </style>
-            </head>
-            <body>
-              <h1>Prova finalizada com sucesso!</h1>
-            </body>
-          </html>
-        `);
-        novaAba.document.close();
-        window.close();
-      })
-      .catch((error) => {
-        alert("Erro ao enviar prova: " + error.message);
-      });
+
+    if (correta) nota++;
   }
+
+  const dadosAluno = {
+    nome: document.getElementById('nome').value,
+    codigoFuncional: document.getElementById('codigoFuncional').value,
+    re: document.getElementById('re').value,
+    pelotao: document.getElementById('pelotao').value,
+    respostas: respostas,
+    nota: nota,
+    dataHora: new Date().toISOString()
+  };
+
+  const id = dadosAluno.codigoFuncional + "_" + Date.now();
+
+  database.ref("respostas/" + id).set(dadosAluno)
+    .then(() => {
+      clearInterval(timerInterval);
+      const novaAba = window.open('', '_blank');
+      novaAba.document.write(`
+        <html>
+          <head>
+            <title>Prova Finalizada</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f6f8;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+              }
+              h1 {
+                color: green;
+                font-size: 28px;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Prova finalizada com sucesso!</h1>
+          </body>
+        </html>
+      `);
+      novaAba.document.close();
+      window.close();
+    })
+    .catch((error) => {
+      alert("Erro ao enviar prova: " + error.message);
+    });
+}
+
   
